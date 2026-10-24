@@ -37,6 +37,7 @@ import {
   XCircle,
   ToggleLeft,
   ToggleRight,
+  Menu,
 } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -62,6 +63,9 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
 
   // Active Admin Tab: 'books' | 'promos' | 'contacts' | 'inquiries' | 'telegram' | 'supabase'
   const [activeTab, setActiveTab] = useState('books')
+
+  // Mobile sidebar open state
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Theme State (Dark / Light)
   const [isDark, setIsDark] = useState(() => {
@@ -421,62 +425,218 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-24">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col lg:flex-row">
       
-      {/* Top Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-[#0b0f19]/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          
-          {/* Logo & Version */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-amber-400 p-0.5 shadow-md shadow-indigo-600/30">
-              <div className="w-full h-full bg-[#0b0f19] rounded-[10px] flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-indigo-400" />
+      {/* MOBILE TOP BAR (visible on screens smaller than lg) */}
+      <div className="lg:hidden sticky top-0 z-40 h-16 bg-[#0b0f19]/95 border-b border-slate-800 px-4 flex items-center justify-between backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+            title="Menyuni ochish"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <span className="font-bold text-white text-sm font-heading">Kitobhon.uz</span>
+            <span className="px-1.5 py-0.2 rounded-md bg-indigo-500/20 text-indigo-400 text-[10px] font-mono font-bold">
+              ADMIN
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300"
+            title={isDark ? t('lightMode') : t('darkMode')}
+          >
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+          </button>
+          <button
+            onClick={logoutAdmin}
+            className="p-2 rounded-xl bg-rose-500/10 text-rose-300 border border-rose-500/30"
+            title="Chiqish"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE SIDEBAR BACKDROP */}
+      {mobileSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* LEFT SIDEBAR (The Navigation Items on the Left) */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-72 bg-[#0b0f19] border-r border-slate-800/80 flex flex-col justify-between p-5 transition-transform duration-300
+        lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0
+        ${mobileSidebarOpen ? 'translate-x-0 shadow-2xl shadow-black' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Top: Logo & Brand */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-5 border-b border-slate-800/80">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-amber-400 p-0.5 shadow-md shadow-indigo-600/30">
+                <div className="w-full h-full bg-[#0b0f19] rounded-[10px] flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-indigo-400" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base font-bold font-heading text-white">Kitobhon.uz</h1>
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-[10px] font-mono font-bold">
+                    ADMIN PRO
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono">
+                  kitob@kitobhon.uz
+                </div>
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold font-heading text-white">Kitobhon.uz</h1>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-[10px] font-mono font-bold">
-                  ADMIN PRO
-                </span>
-              </div>
-              <div className="text-xs text-slate-400 font-mono">
-                Admin: <span className="text-indigo-300">kitob@kitobhon.uz</span>
-              </div>
-            </div>
+
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Right Controls: Theme, Language, Supabase, Back to Store, Sign Out */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            
-            {/* DARK / LIGHT MODE TOGGLE */}
+          {/* SIDEBAR NAVIGATION ITEMS (CIRCLED IN RED BY USER) */}
+          <div className="space-y-1.5">
+            <div className="text-[10px] uppercase font-mono font-bold text-slate-500 px-3 pb-1 tracking-wider">
+              Boshqaruv menyusi
+            </div>
+
+            {/* Tab 1: Books Management */}
             <button
-              onClick={() => setIsDark(!isDark)}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 hover:text-amber-300 transition-all flex items-center gap-2"
-              title={isDark ? t('lightMode') : t('darkMode')}
+              onClick={() => { setActiveTab('books'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'books'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+              }`}
             >
-              {isDark ? (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span className="hidden md:inline">{t('lightMode')}</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 text-indigo-400" />
-                  <span className="hidden md:inline">{t('darkMode')}</span>
-                </>
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-4 h-4 text-indigo-400 group-hover:text-white" />
+                <span>{t('tabBooks')}</span>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'books' ? 'bg-indigo-800 text-white' : 'bg-slate-800 text-slate-400'
+              }`}>
+                {books.length}
+              </span>
+            </button>
+
+            {/* Tab 2: Promo Codes */}
+            <button
+              onClick={() => { setActiveTab('promos'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'promos'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Tag className="w-4 h-4 text-amber-400" />
+                <span>{t('tabPromos')}</span>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'promos' ? 'bg-indigo-800 text-white' : 'bg-slate-800 text-slate-400'
+              }`}>
+                {promos.length}
+              </span>
+            </button>
+
+            {/* Tab 3: Contact & Store Info */}
+            <button
+              onClick={() => { setActiveTab('contacts'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'contacts'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+              }`}
+            >
+              <Phone className="w-4 h-4 text-emerald-400" />
+              <span>{t('tabContacts')}</span>
+            </button>
+
+            {/* Tab 4: Customer Inquiries */}
+            <button
+              onClick={() => { setActiveTab('inquiries'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'inquiries'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-4 h-4 text-sky-400" />
+                <span>{t('tabInquiries')}</span>
+              </div>
+              {inquiries.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500 text-slate-950">
+                  {inquiries.length}
+                </span>
               )}
             </button>
 
-            {/* LANGUAGE SELECTOR DROPDOWN */}
+            {/* Tab 5: Telegram Bot & Links */}
+            <button
+              onClick={() => { setActiveTab('telegram'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'telegram'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+              }`}
+            >
+              <Bot className="w-4 h-4 text-blue-400" />
+              <span>{t('tabTelegram')}</span>
+            </button>
+
+            {/* Tab 6: Supabase Cloud Database */}
+            <button
+              onClick={() => { setIsConfigModalOpen(true); setMobileSidebarOpen(false); }}
+              className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-emerald-300 hover:bg-slate-900/80 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <Database className="w-4 h-4 text-emerald-400" />
+                <span>Supabase Cloud</span>
+              </div>
+              <span className={`w-2.5 h-2.5 rounded-full ${isSupabaseConfigured() ? 'bg-emerald-400 shadow-md shadow-emerald-500/50' : 'bg-amber-400'}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Sidebar: Theme, Lang, Store, Logout */}
+        <div className="pt-5 border-t border-slate-800/80 space-y-2.5">
+          {/* Theme & Language row */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="flex-1 py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-xs font-semibold flex items-center justify-center gap-2 text-slate-300 hover:text-white transition-colors"
+              title={isDark ? t('lightMode') : t('darkMode')}
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+              <span>{isDark ? t('lightMode') : t('darkMode')}</span>
+            </button>
+
+            {/* Language dropdown */}
             <div className="relative" data-admin-lang>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   setLangDropdownOpen(!langDropdownOpen)
                 }}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/90 border border-slate-800 hover:border-slate-700 hover:text-white transition-colors"
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/90 border border-slate-800 hover:border-slate-700 hover:text-white transition-colors flex items-center gap-1.5"
                 title={t('selectLanguage')}
               >
                 <Globe className="w-3.5 h-3.5 text-indigo-400" />
@@ -484,7 +644,7 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 py-1.5 rounded-xl bg-slate-900/95 border border-slate-800 shadow-2xl backdrop-blur-xl z-50">
+                <div className="absolute bottom-full mb-2 right-0 w-36 py-1.5 rounded-xl bg-slate-900/95 border border-slate-800 shadow-2xl backdrop-blur-xl z-50">
                   {languages.map((l) => (
                     <button
                       key={l.code}
@@ -492,136 +652,87 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
                         setLang(l.code)
                         setLangDropdownOpen(false)
                       }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors ${
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors ${
                         lang === l.code
                           ? 'bg-indigo-600/20 text-indigo-400 font-semibold'
                           : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
                       }`}
                     >
-                      <span className="text-base">{l.flag}</span>
+                      <span>{l.flag}</span>
                       <span>{l.label}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
-
-            {/* Supabase Indicator Button */}
-            <button
-              onClick={() => setIsConfigModalOpen(true)}
-              className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                isSupabaseConfigured()
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
-              }`}
-              title="Supabase sozlamalari"
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>{isSupabaseConfigured() ? 'Supabase' : 'Supabase Sozlash'}</span>
-            </button>
-
-            {/* Back to Store */}
-            <button
-              onClick={onBackToStore}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">{t('backToStore')}</span>
-            </button>
-
-            {/* Sign Out */}
-            <button
-              onClick={logoutAdmin}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 text-xs font-semibold transition-colors"
-              title="Chiqish"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t('logoutButton')}</span>
-            </button>
-
           </div>
 
+          {/* Back to store */}
+          <button
+            onClick={onBackToStore}
+            className="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-xs font-semibold flex items-center justify-center gap-2 text-slate-300 hover:text-white transition-colors"
+          >
+            <ExternalLink className="w-4 h-4 text-indigo-400" />
+            <span>{t('backToStore')}</span>
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={logoutAdmin}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('logoutButton')}</span>
+          </button>
         </div>
+      </aside>
 
-        {/* ADMIN TAB NAVIGATION BAR */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800/60 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-1 sm:gap-2 py-2">
-            <button
-              onClick={() => setActiveTab('books')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
-                activeTab === 'books'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>{t('tabBooks')}</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 font-mono">
-                {books.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('promos')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
-                activeTab === 'promos'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <Tag className="w-4 h-4" />
-              <span>{t('tabPromos')}</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 font-mono">
-                {promos.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('contacts')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
-                activeTab === 'contacts'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <Phone className="w-4 h-4" />
-              <span>{t('tabContacts')}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('inquiries')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
-                activeTab === 'inquiries'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>{t('tabInquiries')}</span>
-              {inquiries.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-bold font-mono">
-                  {inquiries.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('telegram')}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
-                activeTab === 'telegram'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              <Bot className="w-4 h-4" />
-              <span>{t('tabTelegram')}</span>
-            </button>
+      {/* RIGHT SIDE MAIN CONTAINER */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Top Header of Right Content Area */}
+        <header className="sticky top-0 z-30 h-16 sm:h-20 bg-[#0b0f19]/80 border-b border-slate-800/80 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold font-heading text-white">
+              {activeTab === 'books' && t('tabBooks')}
+              {activeTab === 'promos' && t('tabPromos')}
+              {activeTab === 'contacts' && t('tabContacts')}
+              {activeTab === 'inquiries' && t('tabInquiries')}
+              {activeTab === 'telegram' && t('tabTelegram')}
+            </h2>
+            <p className="text-xs text-slate-400 hidden sm:block">
+              {activeTab === 'books' && "Kitoblar katalogi, narxlar va ombor zaxirasini boshqarish"}
+              {activeTab === 'promos' && "Xaridorlar uchun chegirma promokodlari va aksiyalar"}
+              {activeTab === 'contacts' && "Sayt va do'kon aloqa ma'lumotlarini sozlash"}
+              {activeTab === 'inquiries' && "Saytdan xaridorlar qoldirgan murojaat va arizalar"}
+              {activeTab === 'telegram' && "Telegram bot tokeni va bildirishnomalar integratsiyasi"}
+            </p>
           </div>
-        </div>
-      </header>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+          <div className="flex items-center gap-3">
+            {activeTab === 'books' && (
+              <button
+                onClick={handleOpenCreate}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-600/30 flex items-center gap-2 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('addBook')}</span>
+              </button>
+            )}
+
+            {activeTab === 'promos' && (
+              <button
+                onClick={handleOpenAddPromo}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-600/30 flex items-center gap-2 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('addPromo')}</span>
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* MAIN CONTENT AREA */}
+        <main className="p-4 sm:p-8 flex-1 space-y-8">
         
         {/* ========================================================
             TAB 1: BOOKS MANAGEMENT
@@ -1374,6 +1485,7 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
         )}
 
       </main>
+      </div>
 
       {/* ========================================================
           MODAL: ADD / EDIT BOOK
