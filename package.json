@@ -1,0 +1,15 @@
+{
+  "name": "kitob",
+  "version": "1.0.0",
+  "description": "Kitobhon.uz onlayn kitob do'koni",
+  "scripts": {
+    "dev": "npm --prefix my-project run dev",
+    "build": "npm --prefix my-project run build",
+    "preview": "npm --prefix my-project run preview",
+    "bot": "npm --prefix my-project run bot",
+    "lint": "npm --prefix my-project run lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
