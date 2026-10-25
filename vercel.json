@@ -1,0 +1,10 @@
+{
+  "framework": null,
+  "installCommand": "npm --prefix my-project install",
+  "buildCommand": "npm --prefix my-project run build",
+  "outputDirectory": "my-project/dist",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

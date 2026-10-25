@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const envUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ANNczsnweLERnnWUJ6BQUQ_t9fPouto'
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 // Allow runtime override via localStorage if needed
 const storedUrl = typeof window !== 'undefined' ? localStorage.getItem('kitobhon_supabase_url') : null

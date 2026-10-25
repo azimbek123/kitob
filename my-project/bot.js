@@ -1,19 +1,20 @@
 /**
- * Kitobhon.uz Telegram Bot Server
- * Bot Token: 8571838307:AAHBYzDfpJF0HyOjY9SCFT9xtVny7C9x7I8
- * Admin Chat ID: 7420313359
- * 
- * Ishga tushirish uchun terminalda:
- *   node bot.js
+ * Kitobhon.uz Telegram Bot (@Kitobilim_bot)
+ * Ishga tushirish:  BOT_TOKEN=... ADMIN_ID=... SUPABASE_URL=... SUPABASE_KEY=... node bot.js
+ * (Vercel'da emas — Railway/Render/VPS kabi doimiy ishlaydigan joyda ishga tushiring)
  */
-
-const BOT_TOKEN = '8571838307:AAHBYzDfpJF0HyOjY9SCFT9xtVny7C9x7I8'
-const ADMIN_ID = 7420313359
+const BOT_TOKEN = process.env.BOT_TOKEN
+const ADMIN_ID = Number(process.env.ADMIN_ID)
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_KEY = process.env.SUPABASE_KEY
+if (!BOT_TOKEN || !ADMIN_ID) {
+  console.error('BOT_TOKEN va ADMIN_ID environment o\'zgaruvchilari kerak')
+  process.exit(1)
+}
 const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`
 
 console.log('--------------------------------------------------')
 console.log('🤖 Kitobhon.uz Telegram Boti ishga tushdi...')
-console.log(`🔑 Admin Chat ID: ${ADMIN_ID}`)
 console.log('--------------------------------------------------')
 
 let lastUpdateId = 0
@@ -39,14 +40,22 @@ async function sendMessage(chatId, text, replyMarkup = null) {
   }
 }
 
-// Boshlang'ich kitoblar xotirasi
-let memoryBooks = [
-  { id: 1, title: "O'tkan kunlar", author: "Abdulla Qodiriy", price: 48000, category: "Badiiy", stock: 24 },
-  { id: 2, title: "Atom odatlar", author: "James Clear", price: 65000, category: "Shaxsiy rivojlanish", stock: 35 },
-  { id: 3, title: "Boy ota, kambag'al ota", author: "Robert Kiyosaki", price: 55000, category: "Biznes", stock: 18 },
-  { id: 4, title: "Grokking Algorithms", author: "Aditya Bhargava", price: 75000, category: "IT & Dasturlash", stock: 40 },
-  { id: 5, title: "Saodat asri qissalari", author: "Ahmad Lutfiy", price: 160000, category: "Tarix", stock: 30 }
-]
+// Supabase REST yordamchisi (kitoblar umumiy bazada saqlanadi)
+async function db(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      ...(options.headers || {}),
+    },
+  })
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`)
+  return res.status === 204 ? [] : res.json()
+}
+const getBooks = () => db('books?select=id,title,author,price,category,stock&order=id.desc')
 
 // Buyruqlarni qayta ishlash
 async function handleCommand(chatId, text, from) {
@@ -72,6 +81,7 @@ ${isSenderAdmin ? '\n👑 <i>Siz tizim administratori sifatida tanildingiz!</i>'
 
   if (trimmed === '/books') {
     let msg = `📚 <b>KITOBLAR RO'YXATI:</b>\n━━━━━━━━━━━━━━━━━━━━\n`
+    const memoryBooks = await getBooks()
     memoryBooks.forEach((b, i) => {
       msg += `${i + 1}. <b>${b.title}</b> (${b.author})\n   💰 ${Number(b.price).toLocaleString('uz-UZ')} so'm | 📦 Qoldiq: ${b.stock} ta\n   ID: <code>${b.id}</code>\n\n`
     })
@@ -81,6 +91,7 @@ ${isSenderAdmin ? '\n👑 <i>Siz tizim administratori sifatida tanildingiz!</i>'
   }
 
   if (trimmed === '/stats') {
+    const memoryBooks = await getBooks()
     const totalBooks = memoryBooks.length
     const totalStock = memoryBooks.reduce((acc, b) => acc + b.stock, 0)
     const totalSum = memoryBooks.reduce((acc, b) => acc + b.stock * b.price, 0)
@@ -105,26 +116,26 @@ ${isSenderAdmin ? '\n👑 <i>Siz tizim administratori sifatida tanildingiz!</i>'
       return
     }
 
-    const newBook = {
-      id: Date.now(),
-      title: parts[0],
-      author: parts[1],
-      price: Number(parts[2]) || 50000,
-      category: parts[3] || 'Badiiy',
-      stock: 10
-    }
-    memoryBooks.push(newBook)
+    const [newBook] = await db('books', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: parts[0],
+        author: parts[1],
+        price: Number(parts[2]) || 50000,
+        category: parts[3] || 'Badiiy',
+        stock: 10,
+      }),
+    })
 
-    await sendMessage(chatId, `✅ <b>Kitob muvaffaqiyatli qo'shildi!</b>\n\n📚 <b>${newBook.title}</b>\n👤 ${newBook.author}\n💰 ${newBook.price.toLocaleString('uz-UZ')} so'm\nID: <code>${newBook.id}</code>`)
+    await sendMessage(chatId, `✅ <b>Kitob muvaffaqiyatli qo'shildi!</b>\n\n📚 <b>${newBook.title}</b>\n👤 ${newBook.author}\n💰 ${Number(newBook.price).toLocaleString('uz-UZ')} so'm\nID: <code>${newBook.id}</code>`)
     return
   }
 
   if (trimmed.startsWith('/delete') && isSenderAdmin) {
     const id = trimmed.replace('/delete', '').trim()
-    const initialLen = memoryBooks.length
-    memoryBooks = memoryBooks.filter(b => String(b.id) !== id)
+    const deleted = await db(`books?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' })
 
-    if (memoryBooks.length < initialLen) {
+    if (deleted.length > 0) {
       await sendMessage(chatId, `🗑 <b>ID ${id} bo'lgan kitob o'chirildi!</b>`)
     } else {
       await sendMessage(chatId, `❌ ID ${id} bo'lgan kitob topilmadi.`)
@@ -159,11 +170,12 @@ async function pollUpdates() {
         lastUpdateId = update.update_id
 
         if (update.message && update.message.text) {
-          await handleCommand(
-            update.message.chat.id,
-            update.message.text,
-            update.message.from
-          )
+          try {
+            await handleCommand(update.message.chat.id, update.message.text, update.message.from)
+          } catch (e) {
+            console.error(e.message)
+            await sendMessage(update.message.chat.id, '⚠️ Bazaga ulanishda xatolik yuz berdi.')
+          }
         }
       }
     }

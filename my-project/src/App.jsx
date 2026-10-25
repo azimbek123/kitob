@@ -11,6 +11,7 @@ import { AdminLogin } from './components/AdminLogin'
 import { AdminDashboard } from './components/AdminDashboard'
 import { initialBooks } from './data/initialBooks'
 import { useAuth } from './context/AuthContext'
+import { supabase, isSupabaseConfigured } from './lib/supabaseClient'
 import { useLanguage } from './context/LanguageContext'
 import { Search, SlidersHorizontal, BookOpen, Sparkles, RotateCcw } from 'lucide-react'
 
@@ -45,6 +46,39 @@ export function App() {
       console.error('Could not save books to localStorage:', e)
     }
   }, [books])
+
+  // Supabase'dan kitoblarni yuklash (barcha qurilmalarda bir xil ko'rinadi)
+  const refreshBooks = async () => {
+    if (!isSupabaseConfigured() || !supabase) return
+    const { data, error } = await supabase.from('books').select('*').order('id', { ascending: false })
+    if (error) {
+      console.warn('Supabase books yuklanmadi:', error.message)
+      return
+    }
+    if (data && data.length > 0) {
+      setBooks(
+        data.map((b) => ({
+          ...b,
+          price: Number(b.price),
+          old_price: b.old_price != null ? Number(b.old_price) : null,
+          rating: Number(b.rating),
+          reviews: b.reviews || [],
+        }))
+      )
+    }
+  }
+
+  useEffect(() => {
+    refreshBooks()
+    const onVisible = () => document.visibilityState === 'visible' && refreshBooks()
+    document.addEventListener('visibilitychange', onVisible)
+    const timer = setInterval(refreshBooks, 60000)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Filtering & Search
   const [searchQuery, setSearchQuery] = useState('')

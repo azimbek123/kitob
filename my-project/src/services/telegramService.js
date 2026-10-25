@@ -1,6 +1,25 @@
 // Telegram Bot Notification Service with Dynamic Admin Configuration
-const DEFAULT_BOT_TOKEN = '8571838307:AAHBYzDfpJF0HyOjY9SCFT9xtVny7C9x7I8'
-const DEFAULT_ADMIN_CHAT_ID = '7420313359'
+// Bot token endi brauzerda saqlanmaydi: xabarlar Vercel serverless funksiyasi
+// (/api/notify) orqali yuboriladi. Token faqat Vercel Environment Variables'da.
+const NOTIFY_ENDPOINT = '/api/notify'
+
+const callNotify = async (method, payload) => {
+  try {
+    const response = await fetch(NOTIFY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method, payload }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok || !data.ok) {
+      return { success: false, error: data.description || data.error || 'Telegram API xatosi' }
+    }
+    return { success: true, data }
+  } catch (error) {
+    console.error('Telegram notify error:', error)
+    return { success: false, error: error.message }
+  }
+}
 
 export const getTelegramConfig = () => {
   try {
@@ -12,9 +31,9 @@ export const getTelegramConfig = () => {
     console.error('Error parsing Telegram config:', e)
   }
   return {
-    botToken: import.meta.env.VITE_TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN,
-    adminChatId: import.meta.env.VITE_TELEGRAM_ADMIN_CHAT_ID || DEFAULT_ADMIN_CHAT_ID,
-    botUsername: '@kitobhon_bot',
+    botToken: '',
+    adminChatId: '',
+    botUsername: '@Kitobilim_bot',
     telegramChannel: 'https://t.me/kitobhon_uz',
     notifyOrders: true,
     notifyContacts: true,
@@ -24,7 +43,7 @@ export const getTelegramConfig = () => {
 
 export const saveTelegramConfig = (config) => {
   try {
-    localStorage.setItem('kitobhon_telegram_config', JSON.stringify(config))
+    localStorage.setItem('kitobhon_telegram_config', JSON.stringify({ ...config, botToken: '', adminChatId: '' }))
     window.dispatchEvent(new CustomEvent('telegram-config-changed', { detail: config }))
     return true
   } catch (e) {
@@ -36,73 +55,27 @@ export const saveTelegramConfig = (config) => {
 /**
  * Send HTML text message to Telegram Admin
  */
-export const sendTelegramMessage = async (text, overrideConfig = null) => {
-  const config = overrideConfig || getTelegramConfig()
-  const token = config.botToken || DEFAULT_BOT_TOKEN
-  const chatId = config.adminChatId || DEFAULT_ADMIN_CHAT_ID
-
-  if (!token || !chatId) {
-    return { success: false, error: 'Telegram Bot Token yoki Chat ID kiritilmagan' }
-  }
-
-  try {
-    const url = `https://api.telegram.org/bot${token}/sendMessage`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'HTML',
-      }),
-    })
-    const data = await response.json()
-    if (!data.ok) {
-      return { success: false, error: data.description || 'Telegram API xatosi' }
-    }
-    return { success: true, data }
-  } catch (error) {
-    console.error('Error sending Telegram notification:', error)
-    return { success: false, error: error.message }
-  }
+export const sendTelegramMessage = async (text) => {
+  return await callNotify('sendMessage', { text, parse_mode: 'HTML' })
 }
 
 /**
  * Send Photo with HTML Caption to Telegram Admin
  */
-export const sendTelegramPhoto = async (photoUrl, caption, overrideConfig = null) => {
-  const config = overrideConfig || getTelegramConfig()
-  const token = config.botToken || DEFAULT_BOT_TOKEN
-  const chatId = config.adminChatId || DEFAULT_ADMIN_CHAT_ID
-
-  try {
-    const url = `https://api.telegram.org/bot${token}/sendPhoto`
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        photo: photoUrl,
-        caption: caption.slice(0, 1024),
-        parse_mode: 'HTML',
-      }),
-    })
-    const data = await response.json()
-    if (data.ok) {
-      return { success: true, data }
-    }
-    return await sendTelegramMessage(caption, config)
-  } catch (error) {
-    console.error('Error sending Telegram photo:', error)
-    return await sendTelegramMessage(caption, config)
-  }
+export const sendTelegramPhoto = async (photoUrl, caption) => {
+  const res = await callNotify('sendPhoto', {
+    photo: photoUrl,
+    caption: caption.slice(0, 1024),
+    parse_mode: 'HTML',
+  })
+  if (res.success) return res
+  return await sendTelegramMessage(caption)
 }
 
 /**
  * Test Telegram Connection
  */
-export const testTelegramConnection = async (token, chatId) => {
-  const testConfig = { botToken: token, adminChatId: chatId }
+export const testTelegramConnection = async () => {
   const time = new Date().toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' })
   const text = `🤖 <b>TEST XABARI — KITOBHON.UZ</b>
 ━━━━━━━━━━━━━━━━━━━━
@@ -112,7 +85,7 @@ export const testTelegramConnection = async (token, chatId) => {
 
 <i>Kitobhon.uz boshqaruv panelidan yuborildi.</i>`
 
-  return await sendTelegramMessage(text, testConfig)
+  return await sendTelegramMessage(text)
 }
 
 /**
@@ -160,10 +133,10 @@ ${itemsText}
 
   const firstBookPhoto = order.items?.[0]?.cover_url
   if (firstBookPhoto) {
-    return await sendTelegramPhoto(firstBookPhoto, message, config)
+    return await sendTelegramPhoto(firstBookPhoto, message)
   }
 
-  return await sendTelegramMessage(message, config)
+  return await sendTelegramMessage(message)
 }
 
 /**
@@ -188,7 +161,7 @@ ${email ? `📧 <b>Email:</b> ${email}\n` : ''}
 ━━━━━━━━━━━━━━━━━━━━
 ⚡️ <i>Kitobhon.uz mijozlar xizmati</i>`
 
-  return await sendTelegramMessage(text, config)
+  return await sendTelegramMessage(text)
 }
 
 /**
@@ -207,7 +180,7 @@ ${details ? `ℹ️ <b>Tafsilot:</b> ${details}\n` : ''}
 📅 <b>Vaqt:</b> ${new Date().toLocaleTimeString('uz-UZ')}`
 
   if (coverUrl) {
-    return await sendTelegramPhoto(coverUrl, text, config)
+    return await sendTelegramPhoto(coverUrl, text)
   }
-  return await sendTelegramMessage(text, config)
+  return await sendTelegramMessage(text)
 }

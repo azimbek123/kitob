@@ -199,26 +199,34 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
       description: formData.description.trim() || 'Tavsif berilmagan.',
     }
 
-    if (editingBook) {
-      onUpdateBook({ ...bookPayload, id: editingBook.id })
-      sendAdminActivityNotification("Kitob tahrirlandi", bookPayload.title, `Narxi: ${bookPayload.price} so'm`)
+    const dbReady = isSupabaseConfigured() && supabase
 
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('books').update(bookPayload).eq('id', editingBook.id)
+    if (editingBook) {
+      if (dbReady) {
+        const { error } = await supabase.from('books').update(bookPayload).eq('id', editingBook.id)
+        if (error) {
+          alert('Supabase xatosi (yangilash): ' + error.message)
+          return
+        }
       }
+      onUpdateBook({ ...editingBook, ...bookPayload, id: editingBook.id })
+      sendAdminActivityNotification("Kitob tahrirlandi", bookPayload.title, `Narxi: ${bookPayload.price} so'm`)
     } else {
-      const newBook = {
-        ...bookPayload,
-        id: Date.now(),
-        reviews_count: 0,
-        reviews: [],
+      let newBook = { ...bookPayload, id: Date.now(), reviews_count: 0, reviews: [] }
+      if (dbReady) {
+        const { data, error } = await supabase
+          .from('books')
+          .insert([{ ...bookPayload, reviews_count: 0 }])
+          .select()
+          .single()
+        if (error) {
+          alert('Supabase xatosi (qo\'shish): ' + error.message)
+          return
+        }
+        newBook = { ...data, price: Number(data.price), rating: Number(data.rating), reviews: [] }
       }
       onAddBook(newBook)
       sendAdminActivityNotification("Yangi kitob qo'shildi", newBook.title, `Muallif: ${newBook.author}, Janr: ${newBook.category}`)
-
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('books').insert([newBook])
-      }
     }
 
     setIsAddModalOpen(false)
@@ -228,12 +236,15 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
   const handleConfirmDelete = async () => {
     if (!deletingBook) return
 
+    if (isSupabaseConfigured() && supabase) {
+      const { error } = await supabase.from('books').delete().eq('id', deletingBook.id)
+      if (error) {
+        alert('Supabase xatosi (o\'chirish): ' + error.message)
+        return
+      }
+    }
     onDeleteBook(deletingBook.id)
     sendAdminActivityNotification("Kitob o'chirildi", deletingBook.title)
-
-    if (isSupabaseConfigured() && supabase) {
-      await supabase.from('books').delete().eq('id', deletingBook.id)
-    }
 
     setDeletingBook(null)
   }
