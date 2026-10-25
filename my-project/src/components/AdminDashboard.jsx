@@ -1391,7 +1391,7 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
                     required
                     value={tgConfig.botToken}
                     onChange={(e) => setTgConfig({ ...tgConfig, botToken: e.target.value.trim() })}
-                    placeholder="8571838307:AAHBYzDfpJF0HyOjY9SCFT9xtVny7C9x7I8"
+                    placeholder="123456789:AA..."
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-white font-mono text-xs sm:text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                   <span className="text-[11px] text-slate-500 mt-1 block">
