@@ -5,21 +5,24 @@
 -- ==============================================================================
 
 -- 1. Avval mavjud policylarni o'chirish
-DROP POLICY IF EXISTS "Public Read Books"      ON public.books;
-DROP POLICY IF EXISTS "Public Manage Books"    ON public.books;
-DROP POLICY IF EXISTS "Public Insert Orders"   ON public.orders;
-DROP POLICY IF EXISTS "Public Read Orders"     ON public.orders;
-DROP POLICY IF EXISTS "Admin Manage Orders"    ON public.orders;
-DROP POLICY IF EXISTS "Public Insert Contacts" ON public.contacts;
-DROP POLICY IF EXISTS "Admin Read Contacts"    ON public.contacts;
-DROP POLICY IF EXISTS "Public Read Reviews"    ON public.reviews;
-DROP POLICY IF EXISTS "Public Insert Reviews"  ON public.reviews;
+DROP POLICY IF EXISTS "Public Read Books"       ON public.books;
+DROP POLICY IF EXISTS "Public Manage Books"     ON public.books;
+DROP POLICY IF EXISTS "Public Insert Orders"    ON public.orders;
+DROP POLICY IF EXISTS "Public Read Orders"      ON public.orders;
+DROP POLICY IF EXISTS "Admin Manage Orders"     ON public.orders;
+DROP POLICY IF EXISTS "Public Insert Contacts"  ON public.contacts;
+DROP POLICY IF EXISTS "Admin Read Contacts"     ON public.contacts;
+DROP POLICY IF EXISTS "Public Read Reviews"     ON public.reviews;
+DROP POLICY IF EXISTS "Public Insert Reviews"   ON public.reviews;
+DROP POLICY IF EXISTS "Public Read Settings"    ON public.site_settings;
+DROP POLICY IF EXISTS "Public Manage Settings"  ON public.site_settings;
 
 -- 2. Jadvallarni o'chirish (tartib muhim: bog'liq jadvallar avval)
-DROP TABLE IF EXISTS public.reviews  CASCADE;
-DROP TABLE IF EXISTS public.contacts CASCADE;
-DROP TABLE IF EXISTS public.orders   CASCADE;
-DROP TABLE IF EXISTS public.books    CASCADE;
+DROP TABLE IF EXISTS public.reviews       CASCADE;
+DROP TABLE IF EXISTS public.contacts      CASCADE;
+DROP TABLE IF EXISTS public.orders        CASCADE;
+DROP TABLE IF EXISTS public.books         CASCADE;
+DROP TABLE IF EXISTS public.site_settings CASCADE;
 
 -- 3. UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -77,24 +80,64 @@ CREATE TABLE public.contacts (
     created_at TIMESTAMPTZ DEFAULT timezone('utc', now()) NOT NULL
 );
 
--- 8. ROW LEVEL SECURITY yoqish
-ALTER TABLE public.books    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.contacts ENABLE ROW LEVEL SECURITY;
+-- 8. SAYT SOZLAMALARI JADVALI (barcha qurilmalarda bir xil ko'rinadi)
+CREATE TABLE public.site_settings (
+    id           TEXT PRIMARY KEY DEFAULT 'main',
+    phone1       TEXT DEFAULT '+998 71 200 00 00',
+    phone2       TEXT DEFAULT '+998 90 123 45 67',
+    email        TEXT DEFAULT 'info@kitobhon.uz',
+    telegram_username TEXT DEFAULT '@kitobhon_admin',
+    telegram_channel  TEXT DEFAULT 'https://t.me/kitobhon_uz',
+    address      TEXT DEFAULT 'Toshkent sh., Yunusobod tumani',
+    address_landmark TEXT DEFAULT 'Mo''ljal: Metro "Bodomzor"',
+    working_hours TEXT DEFAULT '09:00 — 22:00 (Har kuni dam olishsiz)',
+    online_hours  TEXT DEFAULT 'Onlayn buyurtmalar 24/7 qabul qilinadi',
+    bot_username  TEXT DEFAULT '@Kitobilim_bot',
+    site_url      TEXT DEFAULT 'https://kitobmagazin.vercel.app',
+    notify_orders     BOOLEAN DEFAULT true,
+    notify_contacts   BOOLEAN DEFAULT true,
+    notify_admin_actions BOOLEAN DEFAULT true,
+    updated_at    TIMESTAMPTZ DEFAULT timezone('utc', now()) NOT NULL
+);
 
--- 9. POLICIES
-CREATE POLICY "Public Read Books"      ON public.books    FOR SELECT USING (true);
-CREATE POLICY "Public Manage Books"    ON public.books    FOR ALL    USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert Orders"   ON public.orders   FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Read Orders"     ON public.orders   FOR SELECT USING (true);
-CREATE POLICY "Admin Manage Orders"    ON public.orders   FOR ALL    USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert Contacts" ON public.contacts FOR INSERT WITH CHECK (true);
-CREATE POLICY "Admin Read Contacts"    ON public.contacts FOR SELECT USING (true);
-CREATE POLICY "Public Read Reviews"    ON public.reviews  FOR SELECT USING (true);
-CREATE POLICY "Public Insert Reviews"  ON public.reviews  FOR INSERT WITH CHECK (true);
+-- 9. ROW LEVEL SECURITY yoqish
+ALTER TABLE public.books         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.orders        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reviews       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contacts      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- 10. SEED: 20 TA KITOB
+-- 10. POLICIES
+CREATE POLICY "Public Read Books"       ON public.books         FOR SELECT USING (true);
+CREATE POLICY "Public Manage Books"     ON public.books         FOR ALL    USING (true) WITH CHECK (true);
+CREATE POLICY "Public Insert Orders"    ON public.orders        FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Read Orders"      ON public.orders        FOR SELECT USING (true);
+CREATE POLICY "Admin Manage Orders"     ON public.orders        FOR ALL    USING (true) WITH CHECK (true);
+CREATE POLICY "Public Insert Contacts"  ON public.contacts      FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admin Read Contacts"     ON public.contacts      FOR SELECT USING (true);
+CREATE POLICY "Public Read Reviews"     ON public.reviews       FOR SELECT USING (true);
+CREATE POLICY "Public Insert Reviews"   ON public.reviews       FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Read Settings"    ON public.site_settings FOR SELECT USING (true);
+CREATE POLICY "Public Manage Settings"  ON public.site_settings FOR ALL    USING (true) WITH CHECK (true);
+
+-- 11. DEFAULT SOZLAMALAR (Vercel sayt sozlamalari)
+INSERT INTO public.site_settings (id, phone1, phone2, email, telegram_username, telegram_channel, address, address_landmark, working_hours, online_hours, bot_username, site_url)
+VALUES (
+  'main',
+  '+998 71 200 00 00',
+  '+998 90 123 45 67',
+  'info@kitobhon.uz',
+  '@kitobhon_admin',
+  'https://t.me/kitobhon_uz',
+  'Toshkent sh., Yunusobod tumani, Amir Temur shoh ko''chasi, 107-B',
+  'Mo''ljal: Metro "Bodomzor"',
+  '09:00 — 22:00 (Har kuni dam olishsiz)',
+  'Onlayn buyurtmalar 24/7 qabul qilinadi',
+  '@Kitobilim_bot',
+  'https://kitobmagazin.vercel.app'
+);
+
+-- 12. SEED: 20 TA KITOB
 INSERT INTO public.books (title, author, category, price, old_price, cover_url, description, pages, year, language, stock, rating, reviews_count, is_featured) VALUES
 ('O''tkan kunlar',                              'Abdulla Qodiriy',      'Badiiy',              48000,  60000, 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',  'O''zbek adabiyotining birinchi romani. Otabek va Kumushbibining fojiali sevgisi va XIX asrdagi Turkiston hayoti.',              416,  1926, 'O''zbekcha', 24, 4.9, 142, true),
 ('Atom odatlar (Atomic Habits)',                'James Clear',          'Shaxsiy rivojlanish', 65000,  80000, 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80','Kichik o''zgarishlar qanday qilib ulkan natijalarga olib kelishini ilmiy isbotlab beruvchi dunyo miqyosidagi bestseller.',     320,  2018, 'O''zbekcha', 35, 5.0, 289, true),
@@ -118,7 +161,7 @@ INSERT INTO public.books (title, author, category, price, old_price, cover_url, 
 ('Tafakkur durdonalari',                        'Jaloliddin Rumiy',     'Tarix & Falsafa',     49000,  62000, 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=600&q=80','Mavlono Rumiyning eng sara hikmatlari, qalb ko''zini ochuvchi masal va ibratlari.',                                           272,  2019, 'O''zbekcha', 26, 5.0, 275, true);
 
 -- ==============================================================================
--- 11. ADMIN USER YARATISH YO'RIQNOMASI
+-- 13. ADMIN USER YARATISH YO'RIQNOMASI
 -- Supabase Dashboard -> Authentication -> Users -> "Add user" -> "Create user"
 --   Email:    kitob@kitobhon.uz
 --   Password: kitobhon1

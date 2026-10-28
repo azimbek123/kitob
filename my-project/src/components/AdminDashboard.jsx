@@ -51,7 +51,9 @@ import {
 import {
   getSiteSettings,
   saveSiteSettings,
+  loadSiteSettingsFromDB,
   getStoredInquiries,
+  loadInquiriesFromDB,
   deleteInquiry,
   toggleInquiryStatus,
 } from '../services/siteSettings'
@@ -363,9 +365,14 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
   const [siteSettings, setSiteSettings] = useState(getSiteSettings())
   const [siteSettingsSaved, setSiteSettingsSaved] = useState(false)
 
-  const handleSaveSettings = (e) => {
+  // Supabase'dan sozlamalarni yuklash
+  useEffect(() => {
+    loadSiteSettingsFromDB().then((settings) => setSiteSettings(settings))
+  }, [])
+
+  const handleSaveSettings = async (e) => {
     e.preventDefault()
-    saveSiteSettings(siteSettings)
+    await saveSiteSettings(siteSettings)
     setSiteSettingsSaved(true)
     setTimeout(() => setSiteSettingsSaved(false), 3000)
   }
@@ -374,6 +381,11 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
   // 4. INQUIRIES STATE
   // ==========================================
   const [inquiries, setInquiries] = useState(getStoredInquiries())
+
+  // Supabase'dan murojaatlarni yuklash
+  useEffect(() => {
+    loadInquiriesFromDB().then((data) => setInquiries(data))
+  }, [])
 
   useEffect(() => {
     const handleInquiriesChange = () => {
@@ -385,11 +397,14 @@ export const AdminDashboard = ({ books, onAddBook, onUpdateBook, onDeleteBook, o
 
   const handleToggleInquiry = (id) => {
     toggleInquiryStatus(id)
+    // Reload from DB after toggle
+    setTimeout(() => loadInquiriesFromDB().then(setInquiries), 500)
   }
 
   const handleDeleteInquiryItem = (id) => {
     if (window.confirm("Ushbu murojaatni ro'yxatdan o'chirmoqchimisiz?")) {
       deleteInquiry(id)
+      setTimeout(() => loadInquiriesFromDB().then(setInquiries), 500)
     }
   }
 

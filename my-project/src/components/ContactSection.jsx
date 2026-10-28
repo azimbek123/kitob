@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { Send, Phone, Mail, MapPin, Clock, MessageSquare, CheckCircle2, ShieldCheck } from 'lucide-react'
 import { useLanguage } from '../context/LanguageContext'
 import { sendContactNotification } from '../services/telegramService'
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
-import { getSiteSettings, saveInquiry } from '../services/siteSettings'
+import { getSiteSettings, saveInquiry, loadSiteSettingsFromDB } from '../services/siteSettings'
 
 export const ContactSection = () => {
   const { t } = useLanguage()
@@ -19,6 +18,8 @@ export const ContactSection = () => {
   const [settings, setSettings] = useState(getSiteSettings())
 
   useEffect(() => {
+    // Supabase'dan sayt sozlamalarini yuklash
+    loadSiteSettingsFromDB().then((s) => setSettings(s))
     const handleSettingsChange = (e) => {
       setSettings(e.detail || getSiteSettings())
     }
@@ -43,23 +44,11 @@ export const ContactSection = () => {
     }
 
     try {
-      // 1. Dispatch Telegram Notification to Admin
+      // 1. Telegram Notification
       await sendContactNotification(inquiryPayload)
 
-      // 2. Save locally for Admin dashboard
-      saveInquiry(inquiryPayload)
-
-      // 3. Save in Supabase if configured
-      if (isSupabaseConfigured() && supabase) {
-        await supabase.from('contacts').insert([
-          {
-            name: name.trim(),
-            phone: phone.trim(),
-            email: email.trim() || null,
-            message: message.trim(),
-          },
-        ])
-      }
+      // 2. localStorage + Supabase ga saqlaymiz (saveInquiry ichida ikkalasi ham)
+      await saveInquiry(inquiryPayload)
 
       setSubmitted(true)
       setName('')
